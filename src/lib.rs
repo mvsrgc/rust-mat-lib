@@ -1,6 +1,6 @@
-use rand::Rng;
-use rand::prelude::Distribution;
 use rand::distributions::Standard;
+use rand::prelude::Distribution;
+use rand::Rng;
 
 struct Matrix<T> {
     num_rows: usize,
@@ -31,21 +31,17 @@ impl<T: Default + Copy> Matrix<T> {
         Self::new(size, size)
     }
 
-    pub fn square_random(size: usize) -> Result<Self, String>
-    where Standard: Distribution<T> {
-        Self::random(size, size)
-    }
-
     pub fn is_square(&self) -> bool {
         self.num_rows == self.num_cols
     }
 }
 
-impl<T: Default + Copy> Matrix<T> {
-    pub fn random(num_rows: usize, num_cols: usize) -> Result<Matrix<T>, String>
-    where
-        Standard: Distribution<T>,
-    {
+impl<T> Matrix<T>
+where
+    T: Default + Copy,
+    Standard: Distribution<T>,
+{
+    pub fn random(num_rows: usize, num_cols: usize) -> Result<Matrix<T>, String> {
         let mut matrix = Self::new(num_rows, num_cols)?;
 
         let mut rng = rand::thread_rng();
@@ -57,6 +53,10 @@ impl<T: Default + Copy> Matrix<T> {
         }
 
         Ok(matrix)
+    }
+
+    pub fn square_random(size: usize) -> Result<Self, String> {
+        Self::random(size, size)
     }
 }
 
@@ -142,6 +142,4 @@ mod tests {
         let matrix2: Result<Matrix<usize>, String> = Matrix::square_random(10);
         assert!(matrix2.is_ok());
     }
-
-
 }
