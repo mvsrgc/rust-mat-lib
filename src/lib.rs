@@ -27,6 +27,15 @@ impl<T: Default + Copy> Matrix<T> {
         })
     }
 
+    pub fn square(size: usize) -> Result<Self, String> {
+        Self::new(size, size)
+    }
+
+    pub fn square_random(size: usize) -> Result<Self, String>
+    where Standard: Distribution<T> {
+        Self::random(size, size)
+    }
+
     pub fn is_square(&self) -> bool {
         self.num_rows == self.num_cols
     }
@@ -101,5 +110,38 @@ mod tests {
         assert!(matrix1.data.iter().flatten().any(|&x| x != 0.0));
         assert!(matrix2.data.iter().flatten().any(|&x| x != 0));
         assert!(matrix3.data.iter().flatten().any(|&x| x != 0));
+
+        let matrix1: Matrix<f32> = Matrix::square_random(3).unwrap();
+        let matrix2: Matrix<usize> = Matrix::square_random(3).unwrap();
+        let matrix3: Matrix<i8> = Matrix::square_random(3).unwrap();
+        assert!(matrix1.data.iter().flatten().any(|&x| x != 0.0));
+        assert!(matrix2.data.iter().flatten().any(|&x| x != 0));
+        assert!(matrix3.data.iter().flatten().any(|&x| x != 0));
     }
+
+    #[test]
+    fn make_square() {
+        let matrix1: Matrix<usize> = Matrix::square(3).unwrap();
+        assert!(matrix1.is_square());
+
+        let matrix2: Result<Matrix<usize>, String> = Matrix::square(0);
+        assert!(matrix2.is_err());
+
+        let matrix2: Result<Matrix<usize>, String> = Matrix::square(10);
+        assert!(matrix2.is_ok());
+    }
+
+    #[test]
+    fn make_square_random() {
+        let matrix1: Matrix<usize> = Matrix::square_random(3).unwrap();
+        assert!(matrix1.is_square());
+
+        let matrix2: Result<Matrix<usize>, String> = Matrix::square_random(0);
+        assert!(matrix2.is_err());
+
+        let matrix2: Result<Matrix<usize>, String> = Matrix::square_random(10);
+        assert!(matrix2.is_ok());
+    }
+
+
 }
