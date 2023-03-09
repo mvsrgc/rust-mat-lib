@@ -39,11 +39,11 @@ impl<T: Default + Copy, Order> Matrix<T, Order> {
         num_cols: usize,
         f: F,
     ) -> Result<Self, String> {
-        if num_rows <= 0 {
+        if num_rows == 0 {
             return Err("Number of rows cannot be less than or equal to 0.".to_string());
         };
 
-        if num_cols <= 0 {
+        if num_cols == 0 {
             return Err("Number of columns cannot be less than or equal to 0.".to_string());
         };
 
@@ -89,7 +89,7 @@ impl<T: Default + Copy, Order> Matrix<T, Order> {
     where
         T: Clone,
     {
-        Self::from_blind_fn(num_rows, num_cols, || elem.clone())
+        Self::from_blind_fn(num_rows, num_cols, || elem)
     }
 
     pub fn is_square(&self) -> bool {
@@ -185,5 +185,35 @@ mod tests {
 
         let matrix2: Result<Matrix<usize, ColMajor>, String> = Matrix::square_random(10);
         assert!(matrix2.is_ok());
+    }
+
+    #[test]
+    fn col_major_returns_correct_elements() {
+        let mut matrix2: Matrix<f64, ColMajor> = Matrix::default(2, 2).unwrap();
+        matrix2[(0,0)] = 0.0;
+        matrix2[(0,1)] = 1.0;
+        matrix2[(1,0)] = 2.0;
+        matrix2[(1,1)] = 3.0;
+        assert!(matrix2[(0,0)] == 0.0);
+        assert!(matrix2[(0,1)] == 1.0);
+        assert!(matrix2[(1,0)] == 2.0);
+        assert!(matrix2[(1,1)] == 3.0);
+
+        assert!(matrix2.data == vec![0.0,2.0,1.0,3.0]);
+    }
+
+    #[test]
+    fn row_major_returns_correct_elements() {
+        let mut matrix2: Matrix<f64, RowMajor> = Matrix::default(2, 2).unwrap();
+        matrix2[(0,0)] = 0.0;
+        matrix2[(0,1)] = 1.0;
+        matrix2[(1,0)] = 2.0;
+        matrix2[(1,1)] = 3.0;
+        assert!(matrix2[(0,0)] == 0.0);
+        assert!(matrix2[(0,1)] == 1.0);
+        assert!(matrix2[(1,0)] == 2.0);
+        assert!(matrix2[(1,1)] == 3.0);
+
+        assert!(matrix2.data == vec![0.0,1.0,2.0,3.0]);
     }
 }
