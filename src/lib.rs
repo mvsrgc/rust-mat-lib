@@ -1,11 +1,8 @@
-use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
-use std::str::FromStr;
-use num_traits::one;
+use std::io::BufReader;
 use serde::Deserialize;
-use csv;
+
 
 pub trait Order {
     fn calc_index(pos: (usize, usize), dims: (usize, usize)) -> usize;
@@ -43,7 +40,7 @@ struct Matrix<T, Order> {
     _order: PhantomData<Order>,
 }
 
-impl<T: Default + Copy + FromStr + Debug + for<'a> Deserialize<'a>, O: Order> Matrix<T, O> {
+impl<T: Default + Copy + for<'a> Deserialize<'a>, O: Order> Matrix<T, O> {
     pub fn new(num_rows: usize, num_cols: usize) -> Result<Self, String> {
         if num_rows * num_cols == 0 {
             return Err("Number of rows or number of columns cannot be 0.".to_string());
@@ -85,7 +82,9 @@ impl<T: Default + Copy + FromStr + Debug + for<'a> Deserialize<'a>, O: Order> Ma
     pub fn dims(&self) -> Dimensions {
         Dimensions { rows: self.num_rows, cols: self.num_cols }
     }
+}
 
+impl<T: Default + Copy + for<'a> Deserialize<'a>> Matrix<T, RowMajor> {
     pub fn from_file(file: &mut File) -> Result<Self, String> {
         let reader = BufReader::new(file);
 
@@ -94,25 +93,68 @@ impl<T: Default + Copy + FromStr + Debug + for<'a> Deserialize<'a>, O: Order> Ma
         let mut num_rows = 0;
         let mut num_cols = 0;
 
+        let mut data = Vec::new();
+
         for (i, result) in rdr.deserialize().enumerate() {
             let record: Vec<T> = result.unwrap();
-            println!("{:?}", record);
 
             num_rows += 1;
 
             if i == 0 {
                 num_cols = record.len();
             }
+
+            data.extend_from_slice(&record);
         }
 
         Ok(Self {
             num_rows,
             num_cols,
-            data: vec![T::default(); 1],
+            data,
             _order: PhantomData,
         })
     }
 }
+
+impl<T: Default + Copy + for<'a> Deserialize<'a>> Matrix<T, ColMajor> {
+    pub fn from_file(file: &mut File) -> Result<Self, String> {
+        let reader = BufReader::new(file);
+
+        let mut rdr = csv::ReaderBuilder::new().has_headers(false).delimiter(b',').from_reader(reader);
+
+        let mut num_rows = 0;
+        let mut num_cols = 0;
+
+        let mut data = Vec::new();
+
+        for (i, result) in rdr.deserialize().enumerate() {
+            let record: Vec<T> = result.unwrap();
+
+            num_rows += 1;
+
+            if i == 0 {
+                num_cols = record.len();
+            }
+
+            data.extend_from_slice(&record);
+        }
+
+        let mut transposed_data = vec![T::default(); data.len()];
+        for i in 0..num_rows {
+            for j in 0..num_cols {
+                transposed_data[j * num_rows + i] = data[i * num_cols + j];
+            }
+        }
+
+        Ok(Self {
+            num_rows,
+            num_cols,
+            data: transposed_data,
+            _order: PhantomData,
+        })
+    }
+}
+
 
 impl<T, O: Order> std::ops::Index<(usize, usize)> for Matrix<T, O> {
     type Output = T;
@@ -179,11 +221,21 @@ mod tests {
     #[test]
     fn from_file() {
         let path = PathBuf::from("data/input.txt");
-        let mut file = File::open(path).unwrap();
+        let mut file = File::open(&path).unwrap();
 
-        let result: Matrix<f64, ColMajor> = Matrix::from_file(&mut file).unwrap();
+        let result = Matrix::<f64, RowMajor>::from_file(&mut file).unwrap();
 
         assert_eq!(result.dims().rows, 4);
         assert_eq!(result.dims().cols, 5);
+        assert_eq!(result.data.len(), 4 * 5);
+        assert_eq!(result.data, vec![0.0, 1.0, 2.0, 5.0, 3.0, 3.0, 8.0, 9.0, 1.0, 4.0, 2.0, 3.0, 7.0, 1.0, 1.0, 0.0, 0.0, 4.0, 3.0, 8.0]);
+
+        let mut file = File::open(&path).unwrap();
+        let result = Matrix::<f64, ColMajor>::from_file(&mut file).unwrap();
+
+        assert_eq!(result.dims().rows, 4);
+        assert_eq!(result.dims().cols, 5);
+        assert_eq!(result.data.len(), 4 * 5);
+        assert_eq!(result.data, vec![0.0, 3.0, 2.0, 0.0, 1.0, 8.0, 3.0, 0.0, 2.0, 9.0, 7.0, 4.0, 5.0, 1.0, 1.0, 3.0, 3.0, 4.0, 1.0, 8.0]);
     }
 }
