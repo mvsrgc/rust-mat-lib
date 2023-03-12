@@ -4,6 +4,8 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::str::FromStr;
 use num_traits::one;
+use serde::Deserialize;
+use csv;
 
 pub trait Order {
     fn calc_index(pos: (usize, usize), dims: (usize, usize)) -> usize;
@@ -41,7 +43,7 @@ struct Matrix<T, Order> {
     _order: PhantomData<Order>,
 }
 
-impl<T: Default + Copy + FromStr + Debug, O: Order> Matrix<T, O> {
+impl<T: Default + Copy + FromStr + Debug + for<'a> Deserialize<'a>, O: Order> Matrix<T, O> {
     pub fn new(num_rows: usize, num_cols: usize) -> Result<Self, String> {
         if num_rows * num_cols == 0 {
             return Err("Number of rows or number of columns cannot be 0.".to_string());
@@ -56,6 +58,7 @@ impl<T: Default + Copy + FromStr + Debug, O: Order> Matrix<T, O> {
             _order: PhantomData,
         })
     }
+
     pub fn set_identity(&mut self) -> Result<(), String>
         where
             T: num_traits::One,
@@ -84,22 +87,21 @@ impl<T: Default + Copy + FromStr + Debug, O: Order> Matrix<T, O> {
     }
 
     pub fn from_file(file: &mut File) -> Result<Self, String> {
-        let mut reader = BufReader::new(file);
+        let reader = BufReader::new(file);
+
+        let mut rdr = csv::ReaderBuilder::new().has_headers(false).delimiter(b',').from_reader(reader);
 
         let mut num_rows = 0;
         let mut num_cols = 0;
-        for (i, line) in reader.lines().enumerate() {
-            let line = line.unwrap_or_default();
-            let values: Vec<&str> = line.split_whitespace().collect();
+
+        for (i, result) in rdr.deserialize().enumerate() {
+            let record: Vec<T> = result.unwrap();
+            println!("{:?}", record);
+
+            num_rows += 1;
+
             if i == 0 {
-                match (values.get(0), values.get(1)) {
-                    (Some(rows), Some(cols)) => {
-                        num_rows = usize::from_str(rows).unwrap_or_default();
-                        num_cols = usize::from_str(cols).unwrap_or_default();
-                        continue;
-                    }
-                    _ => return Err("File is empty or has invalid format.".to_string()),
-                }
+                num_cols = record.len();
             }
         }
 
