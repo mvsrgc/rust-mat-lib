@@ -1,8 +1,7 @@
-use std::marker::PhantomData;
+use serde::Deserialize;
 use std::fs::File;
 use std::io::BufReader;
-use serde::Deserialize;
-
+use std::marker::PhantomData;
 
 pub trait Order {
     fn calc_index(pos: (usize, usize), dims: (usize, usize)) -> usize;
@@ -57,8 +56,8 @@ impl<T: Default + Copy + for<'a> Deserialize<'a>, O: Order> Matrix<T, O> {
     }
 
     pub fn set_identity(&mut self) -> Result<(), String>
-        where
-            T: num_traits::One,
+    where
+        T: num_traits::One,
     {
         if !self.is_square() {
             return Err("Can't make non-square matrix an identity matrix.".to_string());
@@ -80,7 +79,10 @@ impl<T: Default + Copy + for<'a> Deserialize<'a>, O: Order> Matrix<T, O> {
     }
 
     pub fn dims(&self) -> Dimensions {
-        Dimensions { rows: self.num_rows, cols: self.num_cols }
+        Dimensions {
+            rows: self.num_rows,
+            cols: self.num_cols,
+        }
     }
 }
 
@@ -88,7 +90,10 @@ impl<T: Default + Copy + for<'a> Deserialize<'a>> Matrix<T, RowMajor> {
     pub fn from_file(file: &mut File) -> Result<Self, String> {
         let reader = BufReader::new(file);
 
-        let mut rdr = csv::ReaderBuilder::new().has_headers(false).delimiter(b',').from_reader(reader);
+        let mut rdr = csv::ReaderBuilder::new()
+            .has_headers(false)
+            .delimiter(b',')
+            .from_reader(reader);
 
         let mut num_rows = 0;
         let mut num_cols = 0;
@@ -120,7 +125,10 @@ impl<T: Default + Copy + for<'a> Deserialize<'a>> Matrix<T, ColMajor> {
     pub fn from_file(file: &mut File) -> Result<Self, String> {
         let reader = BufReader::new(file);
 
-        let mut rdr = csv::ReaderBuilder::new().has_headers(false).delimiter(b',').from_reader(reader);
+        let mut rdr = csv::ReaderBuilder::new()
+            .has_headers(false)
+            .delimiter(b',')
+            .from_reader(reader);
 
         let mut num_rows = 0;
         let mut num_cols = 0;
@@ -155,7 +163,6 @@ impl<T: Default + Copy + for<'a> Deserialize<'a>> Matrix<T, ColMajor> {
     }
 }
 
-
 impl<T, O: Order> std::ops::Index<(usize, usize)> for Matrix<T, O> {
     type Output = T;
 
@@ -175,8 +182,8 @@ impl<T, O: Order> std::ops::IndexMut<(usize, usize)> for Matrix<T, O> {
 
 #[cfg(test)]
 mod tests {
-    use std::path::PathBuf;
     use super::*;
+    use std::path::PathBuf;
 
     #[test]
     fn make_matrix() {
@@ -228,7 +235,13 @@ mod tests {
         assert_eq!(result.dims().rows, 4);
         assert_eq!(result.dims().cols, 5);
         assert_eq!(result.data.len(), 4 * 5);
-        assert_eq!(result.data, vec![0.0, 1.0, 2.0, 5.0, 3.0, 3.0, 8.0, 9.0, 1.0, 4.0, 2.0, 3.0, 7.0, 1.0, 1.0, 0.0, 0.0, 4.0, 3.0, 8.0]);
+        assert_eq!(
+            result.data,
+            vec![
+                0.0, 1.0, 2.0, 5.0, 3.0, 3.0, 8.0, 9.0, 1.0, 4.0, 2.0, 3.0, 7.0, 1.0, 1.0, 0.0,
+                0.0, 4.0, 3.0, 8.0
+            ]
+        );
 
         let mut file = File::open(&path).unwrap();
         let result = Matrix::<f64, ColMajor>::from_file(&mut file).unwrap();
@@ -236,6 +249,12 @@ mod tests {
         assert_eq!(result.dims().rows, 4);
         assert_eq!(result.dims().cols, 5);
         assert_eq!(result.data.len(), 4 * 5);
-        assert_eq!(result.data, vec![0.0, 3.0, 2.0, 0.0, 1.0, 8.0, 3.0, 0.0, 2.0, 9.0, 7.0, 4.0, 5.0, 1.0, 1.0, 3.0, 3.0, 4.0, 1.0, 8.0]);
+        assert_eq!(
+            result.data,
+            vec![
+                0.0, 3.0, 2.0, 0.0, 1.0, 8.0, 3.0, 0.0, 2.0, 9.0, 7.0, 4.0, 5.0, 1.0, 1.0, 3.0,
+                3.0, 4.0, 1.0, 8.0
+            ]
+        );
     }
 }
