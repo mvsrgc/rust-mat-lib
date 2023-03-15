@@ -1,6 +1,6 @@
-# Matrix Library
+# rust-mat-lib
 
-This library provides a simple, generic implementation of matrices in Rust with support for both row-major and column-major storage orders. It offers basic operations, such as creating new matrices, setting identity matrices, and reading matrices from CSV files.
+rust-mat-lib provides a simple, generic implementation of matrices in Rust with support for both row-major and column-major storage orders. It offers basic operations like creating new matrices, setting identity matrices, and reading matrices from CSV files.
 
 ## Features
 
@@ -20,7 +20,7 @@ Add the library to your project by including it in your `Cargo.toml` file.
 
 ```toml
 [dependencies]
-matrix-lib = "0.1.0"
+rust-mat-lib = "soon"
 ```
 
 Import the library and its traits in your Rust source file.
