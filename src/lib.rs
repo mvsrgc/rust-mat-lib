@@ -86,31 +86,38 @@ impl<T: Default + Copy + for<'a> Deserialize<'a>, O: Order> Matrix<T, O> {
     }
 }
 
+fn read_csv_data<T: for<'a> Deserialize<'a> + Clone>(file: &mut File) -> Result<(Vec<T>, usize, usize), String> {
+    let reader = BufReader::new(file);
+
+    let mut rdr = csv::ReaderBuilder::new()
+        .has_headers(false)
+        .delimiter(b',')
+        .from_reader(reader);
+
+    let mut num_rows = 0;
+    let mut num_cols = 0;
+
+    let mut data = Vec::new();
+
+    for (i, result) in rdr.deserialize().enumerate() {
+        let record: Vec<T> = result.unwrap();
+
+        num_rows += 1;
+
+        if i == 0 {
+            num_cols = record.len();
+        }
+
+        data.extend_from_slice(&record);
+    }
+
+    Ok((data, num_rows, num_cols))
+}
+
+
 impl<T: Default + Copy + for<'a> Deserialize<'a>> Matrix<T, RowMajor> {
     pub fn from_file(file: &mut File) -> Result<Self, String> {
-        let reader = BufReader::new(file);
-
-        let mut rdr = csv::ReaderBuilder::new()
-            .has_headers(false)
-            .delimiter(b',')
-            .from_reader(reader);
-
-        let mut num_rows = 0;
-        let mut num_cols = 0;
-
-        let mut data = Vec::new();
-
-        for (i, result) in rdr.deserialize().enumerate() {
-            let record: Vec<T> = result.unwrap();
-
-            num_rows += 1;
-
-            if i == 0 {
-                num_cols = record.len();
-            }
-
-            data.extend_from_slice(&record);
-        }
+        let (data, num_rows, num_cols) = read_csv_data(file)?;
 
         Ok(Self {
             num_rows,
@@ -123,29 +130,7 @@ impl<T: Default + Copy + for<'a> Deserialize<'a>> Matrix<T, RowMajor> {
 
 impl<T: Default + Copy + for<'a> Deserialize<'a>> Matrix<T, ColMajor> {
     pub fn from_file(file: &mut File) -> Result<Self, String> {
-        let reader = BufReader::new(file);
-
-        let mut rdr = csv::ReaderBuilder::new()
-            .has_headers(false)
-            .delimiter(b',')
-            .from_reader(reader);
-
-        let mut num_rows = 0;
-        let mut num_cols = 0;
-
-        let mut data = Vec::new();
-
-        for (i, result) in rdr.deserialize().enumerate() {
-            let record: Vec<T> = result.unwrap();
-
-            num_rows += 1;
-
-            if i == 0 {
-                num_cols = record.len();
-            }
-
-            data.extend_from_slice(&record);
-        }
+        let (mut data, num_rows, num_cols) = read_csv_data(file)?;
 
         let mut transposed_data = vec![T::default(); data.len()];
         for i in 0..num_rows {
