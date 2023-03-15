@@ -2,3 +2,5 @@
 /Cargo.lock
 .idea/
 .vscode/
+rusty-tags.vi
+tags
